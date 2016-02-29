@@ -7,6 +7,14 @@ namespace ThirtyDaysOfTDD.UnitTests
     [TestFixture]
     public class StringUtilsTests
     {
+        private StringUtils _stringUtils;
+
+        [TestFixtureSetUp]
+        public void SetupStringUtils()
+        {
+            _stringUtils = new StringUtils();
+        }
+
         [Test]
         public void ShouldBeAbleToCountNumberOfLettersInSimpleSentence()
         {
@@ -14,10 +22,9 @@ namespace ThirtyDaysOfTDD.UnitTests
             string sentenceToScan = "TDD is awesome!";
             string characterToScanFor = "e";
             int expectedResult = 2;
-            StringUtils stringUtils = new StringUtils();
 
             // Act
-            int actualResult = stringUtils.FindNumberOfOccurences(sentenceToScan, characterToScanFor);
+            int actualResult = _stringUtils.FindNumberOfOccurences(sentenceToScan, characterToScanFor);
 
             // Assert
             Assert.AreEqual(expectedResult, actualResult);
@@ -30,10 +37,9 @@ namespace ThirtyDaysOfTDD.UnitTests
             string sentenceToScan = "Once is unique, twice is a coincidence, three times is a pattern.";
             string characterToScanFor = "n";
             int expectedResult = 5;
-            StringUtils stringUtils = new StringUtils();
 
             // Act
-            int actualResult = stringUtils.FindNumberOfOccurences(sentenceToScan, characterToScanFor);
+            int actualResult = _stringUtils.FindNumberOfOccurences(sentenceToScan, characterToScanFor);
 
             // Assert
             Assert.AreEqual(expectedResult, actualResult);
@@ -45,12 +51,11 @@ namespace ThirtyDaysOfTDD.UnitTests
             // Arrange
             string sentenceToScan = "This test should thrown an exception";
             string characterToScanFor = "xx";
-            StringUtils stringUtils = new StringUtils();
 
             // Act && Assert
             Assert.Throws<ArgumentException>(() => 
             {
-                stringUtils.FindNumberOfOccurences(sentenceToScan, characterToScanFor);
+                _stringUtils.FindNumberOfOccurences(sentenceToScan, characterToScanFor);
             });
         }
     }
