@@ -18,7 +18,9 @@ namespace TddStore.UnitTests
             var customerId = Guid.NewGuid();
             var expectedOrderId = Guid.NewGuid();
             var orderDataService = Mock.Create<IOrderDataService>();
-            Mock.Arrange(() => orderDataService.Save(Arg.IsAny<Order>())).Returns(expectedOrderId);
+            Mock.Arrange(() => orderDataService.Save(Arg.IsAny<Order>()))
+                .Returns(expectedOrderId)
+                .OccursOnce();
             var orderService = new OrderService(orderDataService);
 
             // Act
@@ -26,6 +28,7 @@ namespace TddStore.UnitTests
 
             // Assert
             Assert.AreEqual(expectedOrderId, result);
+            Mock.Assert(orderDataService);
         }
     }
 }
