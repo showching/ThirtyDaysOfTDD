@@ -48,10 +48,8 @@ namespace TddStore.UnitTests
             var shoppingCart = new ShoppingCart();
             shoppingCart.Items.Add(new ShoppingCartItem { ItemId = Guid.NewGuid(), Quantity = 0 });
             var customerId = Guid.NewGuid();
-            var expectedOrderId = Guid.NewGuid();
 
             Mock.Arrange(() => _orderDataService.Save(Arg.IsAny<Order>()))
-                .Returns(expectedOrderId)
                 .OccursNever();
 
             // Act
