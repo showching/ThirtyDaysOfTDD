@@ -2,6 +2,7 @@
 using System;
 using System.Linq;
 using TddStore.Core;
+using TddStore.Core.Exceptions;
 using Telerik.JustMock;
 
 namespace TddStore.UnitTests
@@ -9,6 +10,16 @@ namespace TddStore.UnitTests
     [TestFixture]
     public class OrderServiceTests
     {
+        private IOrderDataService _orderDataService;
+        private OrderService _orderService;
+
+        [TestFixtureSetUp]
+        public void SetupTestFixture()
+        {
+            _orderDataService = Mock.Create<IOrderDataService>();
+            _orderService = new OrderService(_orderDataService);
+        }
+
         [Test]
         public void WhenUserPlacesACorrectOrderThenAnOrderNumberShouldBeReturned()
         {
@@ -17,18 +28,41 @@ namespace TddStore.UnitTests
             shoppingCart.Items.Add(new ShoppingCartItem { ItemId = Guid.NewGuid(), Quantity = 1 });
             var customerId = Guid.NewGuid();
             var expectedOrderId = Guid.NewGuid();
-            var orderDataService = Mock.Create<IOrderDataService>();
-            Mock.Arrange(() => orderDataService.Save(Arg.IsAny<Order>()))
+
+            Mock.Arrange(() => _orderDataService.Save(Arg.IsAny<Order>()))
                 .Returns(expectedOrderId)
                 .OccursOnce();
-            var orderService = new OrderService(orderDataService);
 
             // Act
-            var result = orderService.PlaceOrder(customerId, shoppingCart);
+            var result = _orderService.PlaceOrder(customerId, shoppingCart);
 
             // Assert
             Assert.AreEqual(expectedOrderId, result);
-            Mock.Assert(orderDataService);
+            Mock.Assert(_orderDataService);
+        }
+
+        [Test]
+        public void WhenAUserAttemptsToOrderAnItemWithAQuantityOfZeroThrowInvalidOrderException()
+        {
+            // Arrange
+            var shoppingCart = new ShoppingCart();
+            shoppingCart.Items.Add(new ShoppingCartItem { ItemId = Guid.NewGuid(), Quantity = 0 });
+            var customerId = Guid.NewGuid();
+            var expectedOrderId = Guid.NewGuid();
+
+            Mock.Arrange(() => _orderDataService.Save(Arg.IsAny<Order>()))
+                .Returns(expectedOrderId)
+                .OccursNever();
+
+            // Act
+            //_orderService.PlaceOrder(customerId, shoppingCart);
+
+            // Assert
+            Assert.Throws<InvalidOrderException>(() =>
+                {
+                    _orderService.PlaceOrder(customerId, shoppingCart);
+                });
+            Mock.Assert(_orderDataService);
         }
     }
 }
