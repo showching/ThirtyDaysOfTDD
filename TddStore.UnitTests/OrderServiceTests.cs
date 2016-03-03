@@ -10,14 +10,16 @@ namespace TddStore.UnitTests
     [TestFixture]
     public class OrderServiceTests
     {
-        private IOrderDataService _orderDataService;
         private OrderService _orderService;
+        private IOrderDataService _orderDataService;
+        private ICustomerService _customerService;
 
         [TestFixtureSetUp]
         public void SetupTestFixture()
         {
             _orderDataService = Mock.Create<IOrderDataService>();
-            _orderService = new OrderService(_orderDataService);
+            _customerService = Mock.Create<ICustomerService>();
+            _orderService = new OrderService(_orderDataService, _customerService);
         }
 
         [Test]
@@ -61,6 +63,27 @@ namespace TddStore.UnitTests
                     _orderService.PlaceOrder(customerId, shoppingCart);
                 });
             Mock.Assert(_orderDataService);
+        }
+
+        [Test]
+        public void WhenAValidCustomerPlacesAValidOrderAnTheOrderServiceShouldBeAbleToGetGetACustomerFromTheCustomerService()
+        {
+            // Arrange
+            var shoppingCart = new ShoppingCart();
+            shoppingCart.Items.Add(new ShoppingCartItem { ItemId = Guid.NewGuid(), Quantity = 1 });
+            var customerId = Guid.NewGuid();
+            var customerToReturn = new Customer { Id = customerId };
+
+            Mock.Arrange(() => _customerService.GetCustomer(customerId))
+                .Returns(customerToReturn)
+                .OccursOnce();
+
+            // Act
+            _orderService.PlaceOrder(customerId, shoppingCart);
+
+            // Assert
+            Mock.Assert(_customerService);
+
         }
     }
 }
