@@ -42,18 +42,30 @@ namespace TddStore.Core
             // Open Session
             var sessionId = OpenOrderFulfillmentService();
 
+            PlaceOrderWithFulfillmentService(sessionId, shoppingCart, customer);
+
+            // Close Session
+            CloseOrderFulfillmentService(sessionId);
+        }
+
+        private void PlaceOrderWithFulfillmentService(Guid sessionId, ShoppingCart shoppingCart, Customer customer)
+        {
+            // Check Inventory Level
+            var orderForFulfillmentService = CheckInventoryLevels(sessionId, shoppingCart);
+            // Place Order
+            _orderFulfillmentService.PlaceOrder(sessionId, orderForFulfillmentService, customer.ShippingAddress.ToString());
+        }
+ 
+        private Dictionary<Guid, int> CheckInventoryLevels(Guid sessionId, ShoppingCart shoppingCart)
+        {
             // Check Inventory Level
             var firstItemId = shoppingCart.Items[0].ItemId;
             var firstItemQty = shoppingCart.Items[0].Quantity;
             var isInInventory = _orderFulfillmentService.IsInInventory(sessionId, firstItemId, firstItemQty);
 
-            // Place Order
             var orderForFulfillmentService = new Dictionary<Guid, int>();
             orderForFulfillmentService.Add(firstItemId, firstItemQty);
-            _orderFulfillmentService.PlaceOrder(sessionId, orderForFulfillmentService, customer.ShippingAddress.ToString());
-
-            // Close Session
-            CloseOrderFulfillmentService(sessionId);
+            return orderForFulfillmentService;
         }
  
         private void CloseOrderFulfillmentService(Guid sessionId)
