@@ -1,5 +1,6 @@
 ﻿using NUnit.Framework;
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using TddStore.Core;
 using TddStore.Core.Exceptions;
@@ -13,13 +14,15 @@ namespace TddStore.UnitTests
         private OrderService _orderService;
         private IOrderDataService _orderDataService;
         private ICustomerService _customerService;
+        private IOrderFulfillmentService _orderFulfillmentService;
 
         [TestFixtureSetUp]
         public void SetupTestFixture()
         {
             _orderDataService = Mock.Create<IOrderDataService>();
             _customerService = Mock.Create<ICustomerService>();
-            _orderService = new OrderService(_orderDataService, _customerService);
+            _orderFulfillmentService = Mock.Create<IOrderFulfillmentService>();
+            _orderService = new OrderService(_orderDataService, _customerService, _orderFulfillmentService);
         }
 
         [Test]
@@ -29,8 +32,10 @@ namespace TddStore.UnitTests
             var shoppingCart = new ShoppingCart();
             shoppingCart.Items.Add(new ShoppingCartItem { ItemId = Guid.NewGuid(), Quantity = 1 });
             var customerId = Guid.NewGuid();
+            var customer = new Customer { Id = customerId };
             var expectedOrderId = Guid.NewGuid();
 
+            Mock.Arrange(() => _customerService.GetCustomer(customerId)).Returns(customer);
             Mock.Arrange(() => _orderDataService.Save(Arg.IsAny<Order>()))
                 .Returns(expectedOrderId)
                 .OccursOnce();
@@ -84,6 +89,43 @@ namespace TddStore.UnitTests
             // Assert
             Mock.Assert(_customerService);
 
+        }
+
+        [Test]
+        public void WhenUserPlacesOrderWithItemThatIsInInventoryOrderFulfillmentWorkflowShouldComplete()
+        {
+            // Arrange
+            var shoppingCart = new ShoppingCart();
+            var itemId = Guid.NewGuid();
+            shoppingCart.Items.Add(new ShoppingCartItem { ItemId = itemId, Quantity = 1 });
+            var customerId = Guid.NewGuid();
+            var customer = new Customer { Id = customerId };
+            var orderFulfillmentSessionId = Guid.NewGuid();
+
+            Mock.Arrange(() => _customerService.GetCustomer(customerId))
+                .Returns(customer)
+                .OccursOnce();
+
+            Mock.Arrange(() => _orderFulfillmentService.OpenSession(Arg.IsAny<string>(), Arg.IsAny<string>()))
+                .Returns(orderFulfillmentSessionId)
+                .InOrder();
+
+            Mock.Arrange(() => _orderFulfillmentService.IsInInventory(orderFulfillmentSessionId, itemId, 1))
+                .Returns(true)
+                .InOrder();
+
+            Mock.Arrange(()=>_orderFulfillmentService.PlaceOrder(orderFulfillmentSessionId, Arg.IsAny<IDictionary<Guid,int>>(), Arg.IsAny<string>()))
+                .Returns(true)
+                .InOrder();
+
+            Mock.Arrange(() => _orderFulfillmentService.CloseSession(orderFulfillmentSessionId))
+                .InOrder();
+
+            // Act
+            _orderService.PlaceOrder(customerId, shoppingCart);
+
+            // Assert
+            Mock.Assert(_orderFulfillmentService);
         }
     }
 }
