@@ -9,7 +9,7 @@ namespace TddStore.Core
         private IOrderDataService _orderDataService;
         private ICustomerService _customerService;
         private IOrderFulfillmentService _orderFulfillmentService;
-        private string USERNAME = "Bob";
+        private readonly string USERNAME = "Bob";
         private string PASSWORD = "Foo";
 
         public OrderService(IOrderDataService orderDataService, ICustomerService customerService, IOrderFulfillmentService orderFulfillmentService)
@@ -58,13 +58,19 @@ namespace TddStore.Core
  
         private Dictionary<Guid, int> CheckInventoryLevels(Guid sessionId, ShoppingCart shoppingCart)
         {
-            // Check Inventory Level
-            var firstItemId = shoppingCart.Items[0].ItemId;
-            var firstItemQty = shoppingCart.Items[0].Quantity;
-            var isInInventory = _orderFulfillmentService.IsInInventory(sessionId, firstItemId, firstItemQty);
-
             var orderForFulfillmentService = new Dictionary<Guid, int>();
-            orderForFulfillmentService.Add(firstItemId, firstItemQty);
+
+            foreach (var shoppingCartItem in shoppingCart.Items)
+            {
+                var itemId = shoppingCartItem.ItemId;
+                var itemQty = shoppingCartItem.Quantity;
+                var isInInventory = _orderFulfillmentService.IsInInventory(sessionId, itemId, itemQty);
+
+                if (isInInventory)
+                {
+                    orderForFulfillmentService.Add(itemId, itemQty);
+                }
+            }
             return orderForFulfillmentService;
         }
  

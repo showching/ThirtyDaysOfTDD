@@ -49,6 +49,40 @@ namespace TddStore.UnitTests
         }
 
         [Test]
+        public void WhenUserPlacesACorrectOrderThenAnOrderNumberShouldBeReturned1()
+        {
+            // Arrange
+            var itemId = Guid.NewGuid();
+            var shoppingCart = new ShoppingCart();
+            shoppingCart.Items.Add(new ShoppingCartItem { ItemId = itemId, Quantity = 1 });
+            var customerId = Guid.NewGuid();
+            var expectedOrderId = Guid.NewGuid();
+            var orderFulfillmentSessionId = Guid.NewGuid();
+            var customer = new Customer { Id = customerId };
+
+            Mock.Arrange(() => _orderDataService.Save(Arg.IsAny<Order>()))
+                .Returns(expectedOrderId)
+                .OccursOnce();
+            Mock.Arrange(() => _customerService.GetCustomer(customerId)).Returns(customer).OccursOnce();
+            Mock.Arrange(() => _orderFulfillmentService.OpenSession(Arg.IsAny<string>(), Arg.IsAny<string>()))
+                .Returns(orderFulfillmentSessionId);
+            Mock.Arrange(() => _orderFulfillmentService.IsInInventory(orderFulfillmentSessionId, itemId, 1))
+                .Returns(true)
+                .OccursOnce();
+            Mock.Arrange(() => _orderFulfillmentService.PlaceOrder(orderFulfillmentSessionId, Arg.IsAny<IDictionary<Guid, int>>(), Arg.IsAny<string>()))
+                .Returns(true);
+            Mock.Arrange(() => _orderFulfillmentService.CloseSession(orderFulfillmentSessionId));
+
+            // Act
+            var result = _orderService.PlaceOrder(customerId, shoppingCart);
+
+            // Assert
+            Assert.AreEqual(expectedOrderId, result);
+            Mock.Assert(_orderDataService);
+            Mock.Assert(_orderFulfillmentService);
+        }
+
+        [Test]
         public void WhenAUserAttemptsToOrderAnItemWithAQuantityOfZeroThrowInvalidOrderException()
         {
             // Arrange
@@ -125,6 +159,48 @@ namespace TddStore.UnitTests
             _orderService.PlaceOrder(customerId, shoppingCart);
 
             // Assert
+            Mock.Assert(_orderFulfillmentService);
+        }
+
+        [Test]
+        public void WhenUserPlacesACorrectOrderWithMoreThanOneItemThenAnOrderNumberShouldBeReturned()
+        {
+            // Arrange
+            var shoppingCart = new ShoppingCart();
+            var itemOneId = Guid.NewGuid();
+            var itemTwoId = Guid.NewGuid();
+            int itemOneQty = 1;
+            int itemTwoQty = 4;
+            shoppingCart.Items.Add(new ShoppingCartItem { ItemId = itemOneId, Quantity = itemOneQty });
+            shoppingCart.Items.Add(new ShoppingCartItem { ItemId = itemTwoId, Quantity = itemTwoQty });
+            var customerId = Guid.NewGuid();
+            var expectedOrderId = Guid.NewGuid();
+            var orderFulfillmentSessionId = Guid.NewGuid();
+            var customer = new Customer { Id = customerId };
+
+            Mock.Arrange(() => _orderDataService.Save(Arg.IsAny<Order>()))
+                .Returns(expectedOrderId)
+                .OccursOnce();
+            Mock.Arrange(() => _customerService.GetCustomer(customerId))
+                .Returns(customer)
+                .OccursOnce();
+            Mock.Arrange(() => _orderFulfillmentService.OpenSession(Arg.IsAny<string>(), Arg.IsAny<string>()))
+                .Returns(orderFulfillmentSessionId);
+            Mock.Arrange(() => _orderFulfillmentService.IsInInventory(orderFulfillmentSessionId, itemOneId, itemOneQty))
+                .Returns(true)
+                .OccursOnce();
+            Mock.Arrange(() => _orderFulfillmentService.IsInInventory(orderFulfillmentSessionId, itemTwoId, itemTwoQty))
+                .Returns(true)
+                .OccursOnce();
+            Mock.Arrange(() => _orderFulfillmentService.PlaceOrder(orderFulfillmentSessionId, Arg.IsAny<IDictionary<Guid, int>>(), Arg.IsAny<string>()))
+                .Returns(true);
+
+            // Act
+            var result = _orderService.PlaceOrder(customerId, shoppingCart);
+
+            // Assert
+            Assert.AreEqual(expectedOrderId, result);
+            Mock.Assert(_orderDataService);
             Mock.Assert(_orderFulfillmentService);
         }
     }
